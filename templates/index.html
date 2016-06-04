@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <p>Hello {{.Name}}</p>
+
+    {{if .DBStatus}}
+        <p>DB Still alive</p>
+    {{else}}
+        <p>Rip DB</p>
+    {{end}}
+</body>
+</html>
