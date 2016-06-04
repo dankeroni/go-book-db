@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io/ioutil"
-	"net/url"
 )
 
 type Page struct {
@@ -49,6 +48,10 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/book/add", func(w http.ResponseWriter, r *http.Request) {
+
+	})
+
 	fmt.Println(http.ListenAndServe(":80", nil))
 }
 
@@ -56,7 +59,25 @@ type ClassifySearchResponse struct {
 	Results []SearchResult `xml:"works>work"`
 }
 
+type ClassifyBookResponse struct {
+	BookData struct {
+		Title  string `xml:"title,attr"`
+		Author string `xml:"author,attr"`
+		ID     string `xml:"owi,attr"`
+	} `xml:"work"`
+	Classification struct {
+		MostPopular string `xml:"sfa,attr"`
+	} `xml:"recommendations>dcc>mostPopular"`
+}
+
 func search(query string) ([]SearchResult, error) {
+	var err error
+	var c ClassifySearchResponse
+	err = xml.Unmarshal(body, &c)
+	return c.Results, err
+}
+
+func classifyAPI(url string) ([]byte, error) {
 	var resp *http.Response
 	var err error
 	query_url := "http://classify.oclc.org/classify2/Classify?summary=true&title=" + url.QueryEscape(query)
@@ -71,7 +92,4 @@ func search(query string) ([]SearchResult, error) {
 		return []SearchResult{}, err
 	}
 
-	var c ClassifySearchResponse
-	err = xml.Unmarshal(body, &c)
-	return c.Results, err
 }
