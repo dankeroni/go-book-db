@@ -8,13 +8,13 @@ import (
 func TestFind(t *testing.T) {
 	findTests := []struct {
 		id        string
-		expectedC ClassifyBookResponse
+		expectedO ClassifyBookResponse
 		expectedR bool
 		expectedE bool
 	}{
 		{
 			id: "803736779",
-			expectedC: ClassifyBookResponse{
+			expectedO: ClassifyBookResponse{
 				BookData: BookData{
 					Title:  "Cloning internet applications with Ruby : make your own TinyURL, Twitter, Flickr, or Facebook using Ruby",
 					Author: "Chang, Sau Sheong",
@@ -27,7 +27,7 @@ func TestFind(t *testing.T) {
 		},
 		{
 			id: "qwegbvuhe",
-			expectedC: ClassifyBookResponse{
+			expectedO: ClassifyBookResponse{
 				BookData: BookData{
 					Title:  "Cloning internet applications with Ruby : make your own TinyURL, Twitter, Flickr, or Facebook using Ruby",
 					Author: "Chang, Sau Sheong",
@@ -41,7 +41,7 @@ func TestFind(t *testing.T) {
 	}
 
 	for _, test := range findTests {
-		c, err := Find(test.id)
+		o, err := Find(test.id)
 
 		if !test.expectedE {
 			assert.Nil(t, err)
@@ -50,9 +50,67 @@ func TestFind(t *testing.T) {
 		}
 
 		if test.expectedR {
-			assert.Equal(t, test.expectedC, c)
+			assert.Equal(t, test.expectedO, o)
 		} else {
-			assert.NotEqual(t, test.expectedC, c)
+			assert.NotEqual(t, test.expectedO, o)
+		}
+	}
+}
+
+func TestSearch(t *testing.T) {
+	searchTests := []struct {
+		query     string
+		expectedO []SearchResult
+		expectedR bool
+		expectedE bool
+	}{
+		{
+			query: "Cloning internet",
+			expectedO: []SearchResult{
+				{
+					Title:  "Cloning internet applications with Ruby : make your own TinyURL, Twitter, Flickr, or Facebook using Ruby",
+					Author: "Chang, Sau Sheong",
+					Year:   "2010",
+					ID:     "803736779",
+				},
+				{
+					Title:  "Cloning Internet Applications with Ruby",
+					Author: "",
+					Year:   "2010",
+					ID:     "918749340",
+				},
+			},
+			expectedR: true,
+			expectedE: false,
+		},
+		{
+			query: "Cloning internet",
+			expectedO: []SearchResult{
+				{
+					Title:  "Cloning internet applications with Ruby : make your own TinyURL, Twitter, Flickr, or Facebook using Ruby",
+					Author: "Chang, Sau Sheong",
+					Year:   "2010",
+					ID:     "803736779",
+				},
+			},
+			expectedR: false,
+			expectedE: false,
+		},
+	}
+
+	for _, test := range searchTests {
+		o, err := Search(test.query)
+
+		if !test.expectedE {
+			assert.Nil(t, err)
+		} else {
+			assert.NotNil(t, err)
+		}
+
+		if test.expectedR {
+			assert.Equal(t, test.expectedO, o)
+		} else {
+			assert.NotEqual(t, test.expectedO, o)
 		}
 	}
 }

@@ -111,6 +111,7 @@ func Search(query string) ([]SearchResult, error) {
 
 	var c ClassifySearchResponse
 	err = xml.Unmarshal(body, &c)
+	fmt.Println(c)
 	return c.Results, err
 }
 
