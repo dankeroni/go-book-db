@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <style>
         #search-results tr:hover {
-            background-colo: lightgrey;
+            background-color: lightgrey;
             cursor: pointer;
         }
 
@@ -50,7 +50,7 @@
                         searchResults.append(row);
                         row.on("click", function() {
                             $.ajax({
-                                url: "/bookadd?id=" + result.ID,
+                                url: "/books/add?id=" + result.ID,
                                 method: "GET"
                             })
                         })

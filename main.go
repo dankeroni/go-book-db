@@ -7,9 +7,11 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"database/sql"
 	"encoding/json"
 	"encoding/xml"
 	"io/ioutil"
+	"net/url"
 )
 
 type Page struct {
@@ -28,9 +30,11 @@ func main() {
 	fmt.Println("Go web development ( ͡° ͜ʖ ͡°)")
 
 	templates := template.Must(template.ParseFiles("templates/index.html"))
+	db, _ := sql.Open("sqlite3", "dev.db")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if err := templates.ExecuteTemplate(w, "index.html", nil); err != nil {
+		err := templates.ExecuteTemplate(w, "index.html", nil)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
@@ -39,17 +43,37 @@ func main() {
 		var results []SearchResult
 		var err error
 
-		if results, err = search(r.FormValue("search")); err != nil {
+		results, err = search(r.FormValue("search"))
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(results); err != nil {
+
+		err = json.NewEncoder(w).Encode(results)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	http.HandleFunc("/book/add", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/books/add", func(w http.ResponseWriter, r *http.Request) {
+		var book ClassifyBookResponse
+		var err error
 
+		book, err = find(r.FormValue("id"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		err = db.Ping()
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		_, err = db.Exec("insert into books (pk, title, author, id, classification) values (?, ?, ?, ?, ?)",
+			nil, book.BookData.Title, book.BookData.Author, book.BookData.ID, book.Classification.MostPopular)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	})
 
 	fmt.Println(http.ListenAndServe(":80", nil))
@@ -70,26 +94,36 @@ type ClassifyBookResponse struct {
 	} `xml:"recommendations>dcc>mostPopular"`
 }
 
+func find(id string) (ClassifyBookResponse, error) {
+	body, err := classifyAPI("http://classify.oclc.org/classify2/Classify?summary=true&owi=" + url.QueryEscape(id))
+	if err != nil {
+		return ClassifyBookResponse{}, err
+	}
+
+	var c ClassifyBookResponse
+	err = xml.Unmarshal(body, &c)
+	return c, err
+}
+
 func search(query string) ([]SearchResult, error) {
-	var err error
+	query_url := "http://classify.oclc.org/classify2/Classify?summary=true&title=" + url.QueryEscape(query)
+
+	body, err := classifyAPI(query_url)
+	if err != nil {
+		return []SearchResult{}, err
+	}
+
 	var c ClassifySearchResponse
 	err = xml.Unmarshal(body, &c)
 	return c.Results, err
 }
 
-func classifyAPI(url string) ([]byte, error) {
-	var resp *http.Response
-	var err error
-	query_url := "http://classify.oclc.org/classify2/Classify?summary=true&title=" + url.QueryEscape(query)
-
-	if resp, err = http.Get(query_url); err != nil {
-		return []SearchResult{}, err
+func classifyAPI(req_url string) ([]byte, error) {
+	resp, err := http.Get(req_url)
+	if err != nil {
+		return []byte{}, err
 	}
 
 	defer resp.Body.Close()
-	var body []byte
-	if body, err = ioutil.ReadAll(resp.Body); err != nil {
-		return []SearchResult{}, err
-	}
-
+	return ioutil.ReadAll(resp.Body)
 }
