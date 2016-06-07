@@ -1,0 +1,25 @@
+= doctype html
+html lang=en
+  head
+    meta charset=utf-8
+      = css
+        #search-results tr:hover {
+          background-color: lightgrey;
+            cursor: pointer;
+            }
+
+    body
+      form id="search-form" onsubmit="return false" name="search-form"
+        input name="search"
+          input type="submit" value="Search" onclick="submitSearch()"
+        table width="100%"
+          thead
+            tr style="text-align: left"
+              th width="40%" Title
+                th width="30%" Author
+                th width="10%" Year
+                th width="20%" ID
+            tbody id="search-results"
+
+      script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"
+      script src="/static/scripts/search.js"

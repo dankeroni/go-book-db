@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -10,6 +9,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"encoding/xml"
+	"github.com/codegangsta/negroni"
+	"github.com/yosssi/ace"
 	"io/ioutil"
 	"net/url"
 )
@@ -26,20 +27,36 @@ type SearchResult struct {
 	ID     string `xml:"owi,attr"`
 }
 
+var db *sql.DB
+
+func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	err := db.Ping()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	next(w, r)
+}
+
 func main() {
 	fmt.Println("Go web development ( ͡° ͜ʖ ͡°)")
 
-	templates := template.Must(template.ParseFiles("templates/index.html"))
-	db, _ := sql.Open("sqlite3", "dev.db")
+	db, _ = sql.Open("sqlite3", "dev.db")
+	mux := http.NewServeMux()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		err := templates.ExecuteTemplate(w, "index.html", nil)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		template, err := ace.Load("templates/index", "", nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		err = template.Execute(w, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		results, err := Search(r.FormValue("search"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -51,13 +68,8 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/books/add", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/books/add", func(w http.ResponseWriter, r *http.Request) {
 		book, err := Find(r.FormValue("id"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
-		err = db.Ping()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -69,7 +81,19 @@ func main() {
 		}
 	})
 
-	fmt.Println(http.ListenAndServe(":80", nil))
+	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
+		file, err := ioutil.ReadFile("static/" + r.URL.Path[8:])
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		w.Write(file)
+	})
+
+	n := negroni.Classic()
+	n.Use(negroni.HandlerFunc(verifyDatabase))
+	n.UseHandler(mux)
+	n.Run(":80")
 }
 
 type ClassifySearchResponse struct {
@@ -111,7 +135,6 @@ func Search(query string) ([]SearchResult, error) {
 
 	var c ClassifySearchResponse
 	err = xml.Unmarshal(body, &c)
-	fmt.Println(c)
 	return c.Results, err
 }
 
