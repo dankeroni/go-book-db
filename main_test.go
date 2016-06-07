@@ -41,19 +41,8 @@ func TestFind(t *testing.T) {
 	}
 
 	for _, test := range findTests {
-		o, err := Find(test.id)
-
-		if !test.expectedE {
-			assert.Nil(t, err)
-		} else {
-			assert.NotNil(t, err)
-		}
-
-		if test.expectedR {
-			assert.Equal(t, test.expectedO, o)
-		} else {
-			assert.NotEqual(t, test.expectedO, o)
-		}
+		o, e := Find(test.id)
+		RunSimpleTest(t, test.expectedO, o, test.expectedE, e, test.expectedR)
 	}
 }
 
@@ -99,18 +88,21 @@ func TestSearch(t *testing.T) {
 	}
 
 	for _, test := range searchTests {
-		o, err := Search(test.query)
+		o, e := Search(test.query)
+		RunSimpleTest(t, test.expectedO, o, test.expectedE, e, test.expectedR)
+	}
+}
 
-		if !test.expectedE {
-			assert.Nil(t, err)
-		} else {
-			assert.NotNil(t, err)
-		}
+func RunSimpleTest(t *testing.T, expectedO interface{}, o interface{}, expectedE bool, e error, expectedR bool) {
+	if !expectedE {
+		assert.Nil(t, e)
+	} else {
+		assert.NotNil(t, e)
+	}
 
-		if test.expectedR {
-			assert.Equal(t, test.expectedO, o)
-		} else {
-			assert.NotEqual(t, test.expectedO, o)
-		}
+	if expectedR {
+		assert.Equal(t, expectedO, o)
+	} else {
+		assert.NotEqual(t, expectedO, o)
 	}
 }
