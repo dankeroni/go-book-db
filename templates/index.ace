@@ -6,21 +6,54 @@ html lang=en
       = css
         #search-results tr:hover {
           background-color: lightgrey;
-            cursor: pointer;
-            }
+          cursor: pointer;
+        }
+
+        #page-switcher {
+          width: 100%;
+          text-align: center;
+        }
+
+        #page-switcher button {
+          font-size: 24px;
+          font-weight: bold;
+          margin: 1em;
+          padding .3em;
+        }
 
     body
-      form id="search-form" onsubmit="return false" name="search-form"
-        input name="search"
-          input type="submit" value="Search" onclick="submitSearch()"
+      div#page-switcher
+        button onclick="showViewPage()" View Library
+        button onclick="showSearchPage()" Add Books
+
+      div#search-page style="display: none;"
+        form id="search-form" onsubmit="return false" name="search-form"
+          input name="search"
+            input type="submit" value="Search" onclick="submitSearch()"
+
+          table width="100%"
+            thead
+              tr style="text-align: left"
+                th width="40%" Title
+                  th width="30%" Author
+                  th width="10%" Year
+                  th width="20%" ID
+              tbody id="search-results"
+
+      div#view-page
         table width="100%"
           thead
-            tr style="text-align: left"
-              th width="40%" Title
-                th width="30%" Author
-                th width="10%" Year
-                th width="20%" ID
-            tbody id="search-results"
+            tr style="text-align: left;"
+              th width="45%" Title
+                th width="35%" Author
+                th width="20%" Classification
+              tbody#view-results
+                {{range .Books}}
+                  tr
+                    td {{.Title}}
+                    td {{.Author}}
+                    td {{.Classification}}
+                {{end}}
 
       script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"
       script src="/static/scripts/search.js"

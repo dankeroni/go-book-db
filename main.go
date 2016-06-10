@@ -16,8 +16,14 @@ import (
 )
 
 type Page struct {
-	Name     string
-	DBStatus bool
+	Books []Book
+}
+
+type Book struct {
+	PK             int
+	Title          string
+	Author         string
+	Classification Classification
 }
 
 type SearchResult struct {
@@ -48,11 +54,20 @@ func main() {
 		template, err := ace.Load("templates/index", "", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		err = template.Execute(w, nil)
+		p := Page{Books: []Book{}}
+		rows, _ := db.Query("select pk,title,author,classification from books")
+		for rows.Next() {
+			var b Book
+			rows.Scan(&b.PK, &b.Title, &b.Author, &b.Classification.MostPopular)
+			p.Books = append(p.Books, b)
+		}
+		err = template.Execute(w, p)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
@@ -60,11 +75,13 @@ func main() {
 		results, err := Search(r.FormValue("search"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		err = json.NewEncoder(w).Encode(results)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
@@ -72,19 +89,36 @@ func main() {
 		book, err := Find(r.FormValue("id"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		_, err = db.Exec("insert into books (pk, title, author, id, classification) values (?, ?, ?, ?, ?)",
+		result, err := db.Exec("insert into books (pk, title, author, id, classification) values (?, ?, ?, ?, ?)",
 			nil, book.BookData.Title, book.BookData.Author, book.BookData.ID, book.Classification.MostPopular)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		pk, _ := result.LastInsertId()
+		b := Book{
+			PK: int(pk),
+			Title: book.BookData.Title,
+			Author: book.BookData.Author,
+			Classification: Classification{MostPopular: book.Classification.MostPopular},
+		}
+
+		err = json.NewEncoder(w).Encode(b)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
 	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
-		file, err := ioutil.ReadFile("static/" + r.URL.Path[8:])
+		file, err := ioutil.ReadFile(r.URL.Path[1:])
 		if err != nil {
 			http.NotFound(w, r)
+			return
 		}
 
 		w.Write(file)
