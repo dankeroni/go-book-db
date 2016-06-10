@@ -21,6 +21,7 @@ _cgo_export.*
 
 _testmain.go
 
+go-book-db
 *.exe
 *.test
 *.prof
