@@ -1,0 +1,25 @@
+#search-results tr:hover,
+#view-results tr:hover {
+    background-color: lightgrey;
+    cursor: pointer;
+}
+
+#page-switcher {
+    width: 100%;
+    text-align: center;
+}
+
+#page-switcher button {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 1em;
+    padding .3em;
+}
+
+.delete-btn {
+    color: white;
+    background-color: #d9534f;
+    border-color: #d43f4a;
+    border-radius: 8px;
+    cursor: pointer;
+}

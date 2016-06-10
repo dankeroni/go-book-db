@@ -101,9 +101,9 @@ func main() {
 
 		pk, _ := result.LastInsertId()
 		b := Book{
-			PK: int(pk),
-			Title: book.BookData.Title,
-			Author: book.BookData.Author,
+			PK:             int(pk),
+			Title:          book.BookData.Title,
+			Author:         book.BookData.Author,
 			Classification: Classification{MostPopular: book.Classification.MostPopular},
 		}
 
@@ -124,13 +124,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
-		file, err := ioutil.ReadFile(r.URL.Path[1:])
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		w.Write(file)
+		http.ServeFile(w, r, r.URL.Path[1:])
 	})
 
 	n := negroni.Classic()
