@@ -111,7 +111,7 @@ type Classification struct {
 }
 type ClassifyBookResponse struct {
 	BookData       BookData       `xml:"work"`
-	Classification Classification `xml:"recommendations>dcc>mostPopular"`
+	Classification Classification `xml:"recommendations>ddc>mostPopular"`
 }
 
 func Find(id string) (ClassifyBookResponse, error) {

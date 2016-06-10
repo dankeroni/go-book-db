@@ -20,7 +20,9 @@ func TestFind(t *testing.T) {
 					Author: "Chang, Sau Sheong",
 					ID:     "803736779",
 				},
-				Classification: Classification{},
+				Classification: Classification{
+					MostPopular: "005.117",
+				},
 			},
 			expectedR: true,
 			expectedE: false,
