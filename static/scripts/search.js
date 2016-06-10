@@ -39,8 +39,7 @@ function submitSearch() {
                         success: function(data) {
                             var book = JSON.parse(data);
                             if (!book) return;
-                            console.log(book.Classification.MostPopular);
-                            $("#view-results").append("<tr id='book-row-" + book.PK + "'><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification.MostPopular +
+                            $("#view-results").append("<tr id='book-row-" + book.PK + "'><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification +
                                     "</td><td><button class='delete-btn' onclick='deleteBook(" + book.PK + ")'>Delete</button></td></tr>");
                         }
                     })

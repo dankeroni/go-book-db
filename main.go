@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
+	"gopkg.in/gorp.v1"
 
 	"database/sql"
 	"encoding/json"
@@ -21,10 +23,11 @@ type Page struct {
 }
 
 type Book struct {
-	PK             int
-	Title          string
-	Author         string
-	Classification Classification
+	PK             int64  `db:"pk"`
+	Title          string `db:"title"`
+	Author         string `db:"author"`
+	Classification string `db:"classification"`
+	ID             string `db:"id"`
 }
 
 type SearchResult struct {
@@ -35,6 +38,16 @@ type SearchResult struct {
 }
 
 var db *sql.DB
+var dbmap *gorp.DbMap
+
+func initDb() {
+	db, _ = sql.Open("sqlite3", "dev.db")
+
+	dbmap = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+
+	dbmap.AddTableWithName(Book{}, "books").SetKeys(true, "pk")
+	dbmap.CreateTablesIfNotExists()
+}
 
 func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	err := db.Ping()
@@ -48,7 +61,7 @@ func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFun
 func main() {
 	fmt.Println("Go web development ( ͡° ͜ʖ ͡°)")
 
-	db, _ = sql.Open("sqlite3", "dev.db")
+	initDb()
 	mux := gmux.NewRouter()
 
 	// Serve index
@@ -60,12 +73,12 @@ func main() {
 		}
 
 		p := Page{Books: []Book{}}
-		rows, _ := db.Query("select pk,title,author,classification from books")
-		for rows.Next() {
-			var b Book
-			rows.Scan(&b.PK, &b.Title, &b.Author, &b.Classification.MostPopular)
-			p.Books = append(p.Books, b)
+		_, err = dbmap.Select(&p.Books, "select * from books")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+
 		err = template.Execute(w, p)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -98,19 +111,16 @@ func main() {
 			return
 		}
 
-		result, err := db.Exec("insert into books (pk, title, author, id, classification) values (?, ?, ?, ?, ?)",
-			nil, book.BookData.Title, book.BookData.Author, book.BookData.ID, book.Classification.MostPopular)
+		b := Book{
+			PK:             -1,
+			Title:          book.BookData.Title,
+			Author:         book.BookData.Author,
+			Classification: book.Classification.MostPopular,
+		}
+		err = dbmap.Insert(&b)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-
-		pk, _ := result.LastInsertId()
-		b := Book{
-			PK:             int(pk),
-			Title:          book.BookData.Title,
-			Author:         book.BookData.Author,
-			Classification: Classification{MostPopular: book.Classification.MostPopular},
 		}
 
 		err = json.NewEncoder(w).Encode(b)
@@ -122,7 +132,15 @@ func main() {
 
 	// Delete book
 	mux.HandleFunc("/books/{pk}", func(w http.ResponseWriter, r *http.Request) {
-		_, err := db.Exec("delete from books where pk = ?", gmux.Vars(r)["pk"])
+		pk, _ := strconv.ParseInt(gmux.Vars(r)["pk"], 10, 64)
+		b := &Book{
+			PK:             pk,
+			Title:          "",
+			Author:         "",
+			ID:             "",
+			Classification: "",
+		}
+		_, err := dbmap.Delete(b)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -149,6 +167,7 @@ type BookData struct {
 type Classification struct {
 	MostPopular string `xml:"sfa,attr"`
 }
+
 type ClassifyBookResponse struct {
 	BookData       BookData       `xml:"work"`
 	Classification Classification `xml:"recommendations>ddc>mostPopular"`
