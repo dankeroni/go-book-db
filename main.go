@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"github.com/codegangsta/negroni"
+	gmux "github.com/gorilla/mux"
 	"github.com/yosssi/ace"
 	"io/ioutil"
 	"net/url"
@@ -48,8 +49,9 @@ func main() {
 	fmt.Println("Go web development ( ͡° ͜ʖ ͡°)")
 
 	db, _ = sql.Open("sqlite3", "dev.db")
-	mux := http.NewServeMux()
+	mux := gmux.NewRouter()
 
+	// Serve index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		template, err := ace.Load("templates/index", "", nil)
 		if err != nil {
@@ -69,7 +71,10 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}).Methods("GET")
+
+	// Serve static files
+	mux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/")))).Methods("GET")
 
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		results, err := Search(r.FormValue("search"))
@@ -83,10 +88,11 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}).Methods("POST")
 
-	mux.HandleFunc("/books/add", func(w http.ResponseWriter, r *http.Request) {
-		book, err := Find(r.FormValue("id"))
+	// Add book
+	mux.HandleFunc("/books/{pk}", func(w http.ResponseWriter, r *http.Request) {
+		book, err := Find(gmux.Vars(r)["pk"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -112,20 +118,17 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	})
+	}).Methods("PUT")
 
-	mux.HandleFunc("/books/delete", func(w http.ResponseWriter, r *http.Request) {
-		_, err := db.Exec("delete from books where pk = ?", r.FormValue("pk"))
+	// Delete book
+	mux.HandleFunc("/books/{pk}", func(w http.ResponseWriter, r *http.Request) {
+		_, err := db.Exec("delete from books where pk = ?", gmux.Vars(r)["pk"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-	})
-
-	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, r.URL.Path[1:])
-	})
+	}).Methods("DELETE")
 
 	n := negroni.Classic()
 	n.Use(negroni.HandlerFunc(verifyDatabase))
