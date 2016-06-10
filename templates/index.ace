@@ -3,23 +3,31 @@ html lang=en
   head
     meta charset=utf-8
     link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"
-      = css
-        #search-results tr:hover {
-          background-color: lightgrey;
-          cursor: pointer;
-        }
+    = css
+      #search-results tr:hover,
+      #view-results tr:hover {
+        background-color: lightgrey;
+        cursor: pointer;
+      }
 
-        #page-switcher {
-          width: 100%;
-          text-align: center;
-        }
+      #page-switcher {
+        width: 100%;
+        text-align: center;
+      }
 
-        #page-switcher button {
-          font-size: 24px;
-          font-weight: bold;
-          margin: 1em;
-          padding .3em;
-        }
+      #page-switcher button {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 1em;
+        padding .3em;
+      }
+
+      .delete-btn {
+        color: white;
+        background-color: #d9534f;
+        border-color: #d43f4a;
+        border-radius: 8px;
+      }
 
     body
       div#page-switcher
@@ -29,15 +37,15 @@ html lang=en
       div#search-page style="display: none;"
         form id="search-form" onsubmit="return false" name="search-form"
           input name="search"
-            input type="submit" value="Search" onclick="submitSearch()"
+          input type="submit" value="search" onclick="submitSearch()"
 
           table width="100%"
             thead
               tr style="text-align: left"
                 th width="40%" Title
-                  th width="30%" Author
-                  th width="10%" Year
-                  th width="20%" ID
+                th width="30%" Author
+                th width="10%" Year
+                th width="20%" ID
               tbody id="search-results"
 
       div#view-page
@@ -45,15 +53,18 @@ html lang=en
           thead
             tr style="text-align: left;"
               th width="45%" Title
-                th width="35%" Author
-                th width="20%" Classification
-              tbody#view-results
-                {{range .Books}}
-                  tr
-                    td {{.Title}}
-                    td {{.Author}}
-                    td {{.Classification.MostPopular}}
-                {{end}}
+              th width="35%" Author
+              th width="20%" Classification
+              th width="25%" 
+            tbody#view-results
+              {{range .Books}}
+                tr id="book-row-{{.PK}}"
+                  td {{.Title}}
+                  td {{.Author}}
+                  td {{.Classification.MostPopular}}
+                  td
+                    button.delete-btn onclick="deleteBook({{.PK}})" Delete
+              {{end}}
 
       script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"
       script src="/static/scripts/search.js"

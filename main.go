@@ -114,6 +114,15 @@ func main() {
 		}
 	})
 
+	mux.HandleFunc("/books/delete", func(w http.ResponseWriter, r *http.Request) {
+		_, err := db.Exec("delete from books where pk = ?", r.FormValue("pk"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
 	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
 		file, err := ioutil.ReadFile(r.URL.Path[1:])
 		if err != nil {

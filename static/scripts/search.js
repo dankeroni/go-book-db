@@ -8,6 +8,16 @@ function showViewPage() {
     $("#search-page").hide();
 }
 
+function deleteBook(pk) {
+    $.ajax({
+        method: "GET",
+        url: "/books/delete?pk=" + pk,
+        success: function() {
+            $("#book-row-" + pk).remove();
+        }
+    })
+}
+
 function submitSearch() {
     $.ajax({
         url: "/search",
@@ -30,7 +40,7 @@ function submitSearch() {
                             var book = JSON.parse(data);
                             if (!book) return;
                             console.log(book.Classification.MostPopular);
-                            $("#view-results").append("<tr><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification.MostPopular + "</td></tr>");
+                            $("#view-results").append("<tr id='book-row-" + book.PK + "'><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification.MostPopular + "</td><td><button class='delete-btn' onclick='deleteBook(" + book.PK + ")'>Delete</button></td></tr>");
                         }
                     })
                 })
