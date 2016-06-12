@@ -1,16 +1,26 @@
+function filterViewResults() {
+    $.ajax({
+        method: "GET",
+        url: "/books/" + $("#filter-view-results").serialize().substring(7),
+        success: rebuildBookCollection
+    })
+}
+
 function sortBooks(column) {
     $.ajax({
         method: "GET",
         url: "/books/" + column,
-        success: function (result) {
-            var books = JSON.parse(result);
-            if (!books) return;
-
-            $("#view-results").empty();
-
-            books.forEach(appendBook)
-        }
+        success: rebuildBookCollection
     })
+}
+
+function rebuildBookCollection(result) {
+    var books = JSON.parse(result);
+    if (!books) return;
+
+    $("#view-results").empty();
+
+    books.forEach(appendBook)
 }
 
 function appendBook(book) {

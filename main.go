@@ -21,7 +21,8 @@ import (
 )
 
 type Page struct {
-	Books []Book
+	Books  []Book
+	Filter string
 }
 
 type Book struct {
@@ -60,12 +61,28 @@ func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFun
 	next(w, r)
 }
 
-func getBookCollection(books *[]Book, sortCol string, w http.ResponseWriter) bool {
-	if sortCol != "title" && sortCol != "author" && sortCol != "classification" {
+func getStringFromSession(r *http.Request, key string) string {
+	var strValue string
+	val := sessions.GetSession(r).Get(key)
+	if val != nil {
+		strValue = val.(string)
+	}
+	return strValue
+}
+
+func getBookCollection(books *[]Book, sortCol string, filterByClass string, w http.ResponseWriter) bool {
+	if sortCol == "" {
 		sortCol = "pk"
 	}
 
-	_, err := dbmap.Select(books, "select * from books order by "+sortCol)
+	var where string
+	if filterByClass == "fiction" {
+		where = " where classification between '800' and '900'"
+	} else if filterByClass == "nonfiction" {
+		where = " where classification not between '800' and '900'"
+	}
+
+	_, err := dbmap.Select(books, "select * from books"+where+" order by "+sortCol)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return false
@@ -88,14 +105,8 @@ func main() {
 			return
 		}
 
-		var sortColumn string
-		sortBy := sessions.GetSession(r).Get("SortBy")
-		if sortBy != nil {
-			sortColumn = sortBy.(string)
-		}
-
-		p := Page{Books: []Book{}}
-		if !getBookCollection(&p.Books, sortColumn, w) {
+		p := Page{Books: []Book{}, Filter: getStringFromSession(r, "Filter")}
+		if !getBookCollection(&p.Books, getStringFromSession(r, "SortBy"), getStringFromSession(r, "Filter"), w) {
 			return
 		}
 
@@ -168,16 +179,34 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	}).Methods("DELETE")
 
-	// Sort books
-	mux.HandleFunc("/books/{columnName}", func(w http.ResponseWriter, r *http.Request) {
+	// Sort books by column
+	mux.HandleFunc("/books/{columnName:title|author|classification}", func(w http.ResponseWriter, r *http.Request) {
 		columnName := gmux.Vars(r)["columnName"]
 
 		var b []Book
-		if !getBookCollection(&b, columnName, w) {
+		if !getBookCollection(&b, columnName, getStringFromSession(r, "Filter"), w) {
 			return
 		}
 
 		sessions.GetSession(r).Set("SortBy", columnName)
+
+		err := json.NewEncoder(w).Encode(b)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}).Methods("GET")
+
+	// Sort books by fiction
+	mux.HandleFunc("/books/{filter:all|fiction|nonfiction}", func(w http.ResponseWriter, r *http.Request) {
+		filter := gmux.Vars(r)["filter"]
+
+		var b []Book
+		if !getBookCollection(&b, getStringFromSession(r, "SortBy"), filter, w) {
+			return
+		}
+
+		sessions.GetSession(r).Set("Filter", filter)
 
 		err := json.NewEncoder(w).Encode(b)
 		if err != nil {
