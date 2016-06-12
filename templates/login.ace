@@ -1,0 +1,20 @@
+= doctype html
+html lang=en
+  head
+    meta charset=utf-8
+    link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"
+    link rel="stylesheet" type="text/css" href="/static/css/login.css"
+
+  body
+    form#login-form
+      div
+        label Username
+        input type="email" name="username" required=
+      div
+        label Password
+        input type="password" name="password" required=
+      div
+        input type="submit" value="Register" name="register"
+        input type="submit" value="Log In" name="login"
+
+      #error {{.Error}}

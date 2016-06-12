@@ -97,7 +97,7 @@ func main() {
 	initDb()
 	mux := gmux.NewRouter()
 
-	// Serve index
+	// Index page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		template, err := ace.Load("templates/index", "", nil)
 		if err != nil {
@@ -117,9 +117,30 @@ func main() {
 		}
 	}).Methods("GET")
 
+	// Login page
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.FormValue("register") != "" || r.FormValue("login") != "" {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		template, err := ace.Load("templates/login", "", nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = template.Execute(w, nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
 	// Serve static files
 	mux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/")))).Methods("GET")
 
+	// Book search
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		results, err := Search(r.FormValue("search"))
 		if err != nil {

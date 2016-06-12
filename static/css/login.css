@@ -1,0 +1,13 @@
+#login-form div {
+    text-align: center;
+}
+
+#login-form input {
+    margin: .5em 1em;
+}
+
+#error {
+    text-align: center;
+    color: red;
+    margin-top: 1em;
+}
