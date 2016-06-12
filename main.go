@@ -12,6 +12,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"github.com/codegangsta/negroni"
+	"github.com/goincremental/negroni-sessions"
+	"github.com/goincremental/negroni-sessions/cookiestore"
 	gmux "github.com/gorilla/mux"
 	"github.com/yosssi/ace"
 	"io/ioutil"
@@ -58,6 +60,20 @@ func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFun
 	next(w, r)
 }
 
+func getBookCollection(books *[]Book, sortCol string, w http.ResponseWriter) bool {
+	if sortCol != "title" && sortCol != "author" && sortCol != "classification" {
+		sortCol = "pk"
+	}
+
+	_, err := dbmap.Select(books, "select * from books order by "+sortCol)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return false
+	}
+
+	return true
+}
+
 func main() {
 	fmt.Println("Go web development ( ͡° ͜ʖ ͡°)")
 
@@ -72,10 +88,14 @@ func main() {
 			return
 		}
 
+		var sortColumn string
+		sortBy := sessions.GetSession(r).Get("SortBy")
+		if sortBy != nil {
+			sortColumn = sortBy.(string)
+		}
+
 		p := Page{Books: []Book{}}
-		_, err = dbmap.Select(&p.Books, "select * from books")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if !getBookCollection(&p.Books, sortColumn, w) {
 			return
 		}
 
@@ -148,7 +168,26 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	}).Methods("DELETE")
 
+	// Sort books
+	mux.HandleFunc("/books/{columnName}", func(w http.ResponseWriter, r *http.Request) {
+		columnName := gmux.Vars(r)["columnName"]
+
+		var b []Book
+		if !getBookCollection(&b, columnName, w) {
+			return
+		}
+
+		sessions.GetSession(r).Set("SortBy", columnName)
+
+		err := json.NewEncoder(w).Encode(b)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}).Methods("GET")
+
 	n := negroni.Classic()
+	n.Use(sessions.Sessions("go-book-db", cookiestore.New([]byte("password123"))))
 	n.Use(negroni.HandlerFunc(verifyDatabase))
 	n.UseHandler(mux)
 	n.Run(":80")

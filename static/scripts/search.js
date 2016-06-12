@@ -1,3 +1,23 @@
+function sortBooks(column) {
+    $.ajax({
+        method: "GET",
+        url: "/books/" + column,
+        success: function (result) {
+            var books = JSON.parse(result);
+            if (!books) return;
+
+            $("#view-results").empty();
+
+            books.forEach(appendBook)
+        }
+    })
+}
+
+function appendBook(book) {
+    $("#view-results").append("<tr id='book-row-" + book.PK + "'><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification +
+            "</td><td><button class='delete-btn' onclick='deleteBook(" + book.PK + ")'>Delete</button></td></tr>");
+}
+
 function showSearchPage() {
     $("#search-page").show();
     $("#view-page").hide();
@@ -39,8 +59,7 @@ function submitSearch() {
                         success: function(data) {
                             var book = JSON.parse(data);
                             if (!book) return;
-                            $("#view-results").append("<tr id='book-row-" + book.PK + "'><td>" + book.Title + "</td><td>" + book.Author + "</td><td>" + book.Classification +
-                                    "</td><td><button class='delete-btn' onclick='deleteBook(" + book.PK + ")'>Delete</button></td></tr>");
+                            appendBook(book);
                         }
                     })
                 })

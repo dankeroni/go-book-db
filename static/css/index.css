@@ -1,5 +1,6 @@
 #search-results tr:hover,
-#view-results tr:hover {
+#view-results tr:hover,
+#view-page th:hover {
     background-color: lightgrey;
     cursor: pointer;
 }
@@ -14,6 +15,10 @@
     font-weight: bold;
     margin: 1em;
     padding .3em;
+}
+
+#search-page {
+    display: none;
 }
 
 .delete-btn {

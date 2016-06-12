@@ -28,9 +28,9 @@ html lang=en
         table width="100%"
           thead
             tr style="text-align: left;"
-              th width="45%" Title
-              th width="35%" Author
-              th width="20%" Classification
+              th width="45%" onclick="sortBooks('title')" Title
+              th width="35%" onclick="sortBooks('author')" Author
+              th width="20%" onclick="sortBooks('classification')" Classification
               th width="25%"
             tbody#view-results
               {{range .Books}}
